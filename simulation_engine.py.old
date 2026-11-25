@@ -1,0 +1,100 @@
+
+import time
+
+
+class SimulationEngine:
+
+    def __init__(self, equipment_manager):
+
+        self.manager = equipment_manager
+
+        self.running = False
+
+        self.simulation_time = 0.0
+
+        self.total_cycles = 0
+
+        self.last_update = None
+
+    # -----------------------------------------
+    # AVVIO SIMULAZIONE
+    # -----------------------------------------
+
+    def start(self):
+
+        if self.running:
+            return False
+
+        self.running = True
+        self.last_update = time.monotonic()
+
+        return True
+
+    # -----------------------------------------
+    # ARRESTO SIMULAZIONE
+    # -----------------------------------------
+
+    def stop(self):
+
+        if not self.running:
+            return False
+
+        self.running = False
+        self.last_update = None
+
+        return True
+
+    # -----------------------------------------
+    # AGGIORNAMENTO MANUALE
+    # -----------------------------------------
+
+    def step(self, dt_seconds=1.0):
+
+        if dt_seconds <= 0:
+            raise ValueError(
+                "Il passo temporale deve essere positivo"
+            )
+
+        self.manager.update_all(dt_seconds)
+
+        self.simulation_time += dt_seconds
+
+        self.total_cycles += 1
+
+        return self.get_status()
+
+    # -----------------------------------------
+    # AGGIORNAMENTO TEMPORALE
+    # -----------------------------------------
+
+    def tick(self):
+
+        if not self.running:
+            return None
+
+        now = time.monotonic()
+
+        if self.last_update is None:
+            self.last_update = now
+            return None
+
+        dt = now - self.last_update
+
+        self.last_update = now
+
+        return self.step(dt)
+
+    # -----------------------------------------
+    # STATO SIMULAZIONE
+    # -----------------------------------------
+
+    def get_status(self):
+
+        return {
+            "running": self.running,
+            "simulation_time_seconds": round(
+                self.simulation_time, 2
+            ),
+            "total_cycles": self.total_cycles,
+            "equipment": self.manager.get_summary()
+        }

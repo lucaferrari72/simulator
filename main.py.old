@@ -1,0 +1,328 @@
+
+import sys
+
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
+    QGroupBox,
+    QDoubleSpinBox,
+)
+
+from equipment.fryer import Fryer
+
+
+class MainWindow(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+
+        self.fryer = Fryer()
+
+        self.setWindowTitle(
+            "Marine Kitchen Simulator"
+        )
+
+        self.resize(1050, 750)
+
+        self.create_interface()
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(
+            self.update_simulation
+        )
+        self.timer.start(1000)
+
+        self.refresh_interface()
+
+    def create_interface(self):
+
+        central = QWidget()
+        self.setCentralWidget(central)
+
+        main_layout = QVBoxLayout(central)
+
+        # TITOLO
+        title = QLabel("MARINE KITCHEN SIMULATOR")
+        title.setStyleSheet("""
+            font-size: 26px;
+            font-weight: bold;
+            color: #1976D2;
+            padding: 10px;
+        """)
+
+        main_layout.addWidget(title)
+
+        subtitle = QLabel(
+            "Supervisione apparecchiature professionali navali"
+        )
+        main_layout.addWidget(subtitle)
+
+        # IDENTIFICAZIONE
+        equipment_group = QGroupBox(
+            "IDENTIFICAZIONE APPARECCHIATURA"
+        )
+
+        equipment_layout = QVBoxLayout()
+
+        equipment_layout.addWidget(QLabel(
+            "44422 | Ambach | A-9EF1/60-24-MA"
+        ))
+
+        equipment_layout.addWidget(QLabel(
+            "Friggitrice 32 L | 440 V trifase | 60 Hz | 24 kW"
+        ))
+
+        equipment_group.setLayout(equipment_layout)
+        main_layout.addWidget(equipment_group)
+
+        # DATI TERMICI
+        thermal_group = QGroupBox(
+            "DATI TERMICI"
+        )
+
+        thermal_layout = QGridLayout()
+
+        self.temperature_label = QLabel("-- °C")
+        self.setpoint_label = QLabel("-- °C")
+        self.heating_label = QLabel("--")
+        self.status_label = QLabel("SPENTA")
+
+        self.temperature_label.setStyleSheet(
+            "font-size: 30px; font-weight: bold; color: #E67E22;"
+        )
+
+        thermal_layout.addWidget(
+            QLabel("Temperatura olio"), 0, 0
+        )
+        thermal_layout.addWidget(
+            self.temperature_label, 1, 0
+        )
+
+        thermal_layout.addWidget(
+            QLabel("Setpoint"), 0, 1
+        )
+        thermal_layout.addWidget(
+            self.setpoint_label, 1, 1
+        )
+
+        thermal_layout.addWidget(
+            QLabel("Resistenze"), 2, 0
+        )
+        thermal_layout.addWidget(
+            self.heating_label, 3, 0
+        )
+
+        thermal_layout.addWidget(
+            QLabel("Stato"), 2, 1
+        )
+        thermal_layout.addWidget(
+            self.status_label, 3, 1
+        )
+
+        thermal_group.setLayout(thermal_layout)
+        main_layout.addWidget(thermal_group)
+
+        # DATI ELETTRICI
+        electrical_group = QGroupBox(
+            "DATI ELETTRICI"
+        )
+
+        electrical_layout = QGridLayout()
+
+        self.voltage_label = QLabel("-- V")
+        self.frequency_label = QLabel("-- Hz")
+
+        self.current_l1_label = QLabel("-- A")
+        self.current_l2_label = QLabel("-- A")
+        self.current_l3_label = QLabel("-- A")
+
+        self.power_label = QLabel("-- kW")
+        self.energy_label = QLabel("-- kWh")
+
+        electrical_values = [
+            ("Tensione", self.voltage_label, 0, 0),
+            ("Frequenza", self.frequency_label, 0, 1),
+            ("Corrente L1", self.current_l1_label, 1, 0),
+            ("Corrente L2", self.current_l2_label, 1, 1),
+            ("Corrente L3", self.current_l3_label, 2, 0),
+            ("Potenza attiva", self.power_label, 2, 1),
+            ("Energia consumata", self.energy_label, 3, 0),
+        ]
+
+        for name, label, row, col in electrical_values:
+
+            electrical_layout.addWidget(
+                QLabel(name), row * 2, col
+            )
+
+            label.setStyleSheet(
+                "font-size: 21px; font-weight: bold;"
+            )
+
+            electrical_layout.addWidget(
+                label, row * 2 + 1, col
+            )
+
+        electrical_group.setLayout(
+            electrical_layout
+        )
+
+        main_layout.addWidget(electrical_group)
+
+        # COMANDI
+        control_group = QGroupBox(
+            "COMANDI OPERATORE"
+        )
+
+        control_layout = QVBoxLayout()
+
+        temperature_layout = QHBoxLayout()
+
+        temperature_layout.addWidget(
+            QLabel("Temperatura desiderata:")
+        )
+
+        self.setpoint_control = QDoubleSpinBox()
+        self.setpoint_control.setRange(100, 190)
+        self.setpoint_control.setValue(180)
+        self.setpoint_control.setSuffix(" °C")
+
+        self.setpoint_control.valueChanged.connect(
+            self.change_setpoint
+        )
+
+        temperature_layout.addWidget(
+            self.setpoint_control
+        )
+
+        control_layout.addLayout(
+            temperature_layout
+        )
+
+        buttons_layout = QHBoxLayout()
+
+        self.on_button = QPushButton("ACCENSIONE")
+        self.off_button = QPushButton("SPEGNIMENTO")
+
+        self.on_button.clicked.connect(
+            self.turn_on
+        )
+
+        self.off_button.clicked.connect(
+            self.turn_off
+        )
+
+        self.on_button.setStyleSheet("""
+            background-color: #219653;
+            color: white;
+            font-weight: bold;
+            padding: 12px;
+        """)
+
+        self.off_button.setStyleSheet("""
+            background-color: #C0392B;
+            color: white;
+            font-weight: bold;
+            padding: 12px;
+        """)
+
+        buttons_layout.addWidget(self.on_button)
+        buttons_layout.addWidget(self.off_button)
+
+        control_layout.addLayout(buttons_layout)
+
+        control_group.setLayout(control_layout)
+        main_layout.addWidget(control_group)
+
+        # FOOTER
+        footer = QLabel(
+            "SIMULAZIONE SOFTWARE - NON COLLEGATA A MACCHINE REALI"
+        )
+
+        main_layout.addWidget(footer)
+
+    def turn_on(self):
+        self.fryer.turn_on()
+        self.refresh_interface()
+
+    def turn_off(self):
+        self.fryer.turn_off()
+        self.refresh_interface()
+
+    def change_setpoint(self, value):
+        self.fryer.set_temperature(value)
+
+    def update_simulation(self):
+        self.fryer.update(1.0)
+        self.refresh_interface()
+
+    def refresh_interface(self):
+
+        data = self.fryer.get_electrical_data()
+
+        # DATI TERMICI
+        self.temperature_label.setText(
+            f"{self.fryer.oil_temperature:.1f} °C"
+        )
+
+        self.setpoint_label.setText(
+            f"{self.fryer.temperature_setpoint:.1f} °C"
+        )
+
+        self.heating_label.setText(
+            "ON" if self.fryer.is_heating else "OFF"
+        )
+
+        self.status_label.setText(
+            "ACCESA" if self.fryer.is_on else "SPENTA"
+        )
+
+        # DATI ELETTRICI
+        self.voltage_label.setText(
+            f"{data['voltage_v']:.1f} V"
+        )
+
+        self.frequency_label.setText(
+            f"{data['frequency_hz']:.1f} Hz"
+        )
+
+        self.current_l1_label.setText(
+            f"{data['current_l1_a']:.2f} A"
+        )
+
+        self.current_l2_label.setText(
+            f"{data['current_l2_a']:.2f} A"
+        )
+
+        self.current_l3_label.setText(
+            f"{data['current_l3_a']:.2f} A"
+        )
+
+        self.power_label.setText(
+            f"{data['power_kw']:.2f} kW"
+        )
+
+        self.energy_label.setText(
+            f"{data['energy_kwh']:.3f} kWh"
+        )
+
+
+def main():
+
+    app = QApplication(sys.argv)
+
+    window = MainWindow()
+    window.show()
+
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

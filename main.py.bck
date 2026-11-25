@@ -1,0 +1,212 @@
+
+import sys
+
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QHBoxLayout,
+    QComboBox,
+    QGroupBox,
+    QPlainTextEdit,
+)
+
+from equipment.equipment_loader import create_equipment_manager
+from simulation_engine import SimulationEngine
+
+
+class MainWindow(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Marine Kitchen Simulator")
+        self.resize(1100, 800)
+
+        # REGISTRO CENTRALE
+        self.manager = create_equipment_manager()
+
+        # MOTORE DI SIMULAZIONE
+        self.engine = SimulationEngine(self.manager)
+        self.engine.start()
+
+        self.create_interface()
+
+        # TIMER
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_simulation)
+        self.timer.start(1000)
+
+        self.refresh_interface()
+
+    def create_interface(self):
+
+        central = QWidget()
+        self.setCentralWidget(central)
+
+        layout = QVBoxLayout(central)
+
+        title = QLabel("MARINE KITCHEN SIMULATOR")
+        title.setStyleSheet(
+            "font-size: 26px; font-weight: bold; color: #1976D2;"
+        )
+        layout.addWidget(title)
+
+        # RIEPILOGO GENERALE
+        summary_group = QGroupBox("RIEPILOGO CUCINA")
+        summary_layout = QVBoxLayout()
+
+        self.summary_label = QLabel()
+        self.summary_label.setStyleSheet(
+            "font-size: 16px; font-weight: bold;"
+        )
+
+        summary_layout.addWidget(self.summary_label)
+        summary_group.setLayout(summary_layout)
+        layout.addWidget(summary_group)
+
+        # SELEZIONE APPARECCHIATURA
+        selection_group = QGroupBox("APPARECCHIATURE")
+        selection_layout = QVBoxLayout()
+
+        self.equipment_combo = QComboBox()
+
+        for equipment_id, equipment in self.manager.equipment.items():
+
+            description = (
+                f"{equipment_id} | "
+                f"{equipment.manufacturer} | "
+                f"{equipment.model}"
+            )
+
+            self.equipment_combo.addItem(
+                description,
+                equipment_id
+            )
+
+        self.equipment_combo.currentIndexChanged.connect(
+            self.refresh_interface
+        )
+
+        selection_layout.addWidget(self.equipment_combo)
+        selection_group.setLayout(selection_layout)
+        layout.addWidget(selection_group)
+
+        # DATI APPARECCHIATURA
+        data_group = QGroupBox("DATI APPARECCHIATURA")
+        data_layout = QVBoxLayout()
+
+        self.data_display = QPlainTextEdit()
+        self.data_display.setReadOnly(True)
+
+        data_layout.addWidget(self.data_display)
+        data_group.setLayout(data_layout)
+        layout.addWidget(data_group)
+
+        # COMANDI
+        control_group = QGroupBox("COMANDI OPERATORE")
+        control_layout = QHBoxLayout()
+
+        self.on_button = QPushButton("ACCENSIONE")
+        self.off_button = QPushButton("SPEGNIMENTO")
+
+        self.on_button.clicked.connect(self.turn_on)
+        self.off_button.clicked.connect(self.turn_off)
+
+        control_layout.addWidget(self.on_button)
+        control_layout.addWidget(self.off_button)
+
+        control_group.setLayout(control_layout)
+        layout.addWidget(control_group)
+
+        self.simulation_label = QLabel("SIMULAZIONE ATTIVA")
+        layout.addWidget(self.simulation_label)
+
+        footer = QLabel(
+            "SIMULAZIONE SOFTWARE - NON COLLEGATA A MACCHINE REALI"
+        )
+        layout.addWidget(footer)
+
+    def get_selected_id(self):
+
+        return self.equipment_combo.currentData()
+
+    def turn_on(self):
+
+        equipment_id = self.get_selected_id()
+
+        if equipment_id is not None:
+            self.manager.turn_on(equipment_id)
+
+        self.refresh_interface()
+
+    def turn_off(self):
+
+        equipment_id = self.get_selected_id()
+
+        if equipment_id is not None:
+            self.manager.turn_off(equipment_id)
+
+        self.refresh_interface()
+
+    def update_simulation(self):
+
+        self.engine.tick()
+        self.refresh_interface()
+
+    def refresh_interface(self):
+
+        # RIEPILOGO GENERALE
+        summary = self.manager.get_summary()
+
+        self.summary_label.setText(
+            f"Apparecchiature: {summary['equipment_count']}    |    "
+            f"Attive: {summary['active_equipment']}    |    "
+            f"Allarmi: {summary['alarm_equipment']}\n"
+            f"Potenza totale: {summary['total_power_kw']:.3f} kW    |    "
+            f"Energia totale: {summary['total_energy_kwh']:.4f} kWh"
+        )
+
+        # DATI APPARECCHIATURA SELEZIONATA
+        equipment_id = self.get_selected_id()
+
+        if equipment_id is None:
+            return
+
+        data = self.manager.get_equipment_data(equipment_id)
+
+        lines = []
+
+        for key, value in data.items():
+
+            if isinstance(value, float):
+                formatted_value = f"{value:.3f}"
+
+            else:
+                formatted_value = str(value)
+
+            lines.append(
+                f"{key}: {formatted_value}"
+            )
+
+        self.data_display.setPlainText(
+            "\n".join(lines)
+        )
+
+
+def main():
+
+    app = QApplication(sys.argv)
+
+    window = MainWindow()
+    window.show()
+
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

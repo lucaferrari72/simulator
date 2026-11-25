@@ -1,0 +1,80 @@
+
+{
+    "passengers": 3000,
+
+    "simulation": {
+        "automatic": true,
+        "start_time": "03:30",
+        "time_scale": 1.0,
+        "cycle_seconds": 1
+    },
+
+    "equipment_profiles": {
+
+        "refrigeration": [
+            {"start": "00:00", "end": "00:00"}
+        ],
+
+        "ovens": [
+            {"start": "04:00", "end": "10:30"},
+            {"start": "09:00", "end": "15:30"},
+            {"start": "14:30", "end": "23:00"}
+        ],
+
+        "induction": [
+            {"start": "04:30", "end": "10:00"},
+            {"start": "09:30", "end": "15:00"},
+            {"start": "14:30", "end": "22:30"}
+        ],
+
+        "fryers": [
+            {"start": "05:00", "end": "10:00"},
+            {"start": "10:30", "end": "15:00"},
+            {"start": "16:30", "end": "22:00"}
+        ],
+
+        "infrared_grills": [
+            {"start": "05:00", "end": "10:00"},
+            {"start": "11:00", "end": "14:30"},
+            {"start": "17:00", "end": "22:00"}
+        ],
+
+        "frytops": [
+            {"start": "05:00", "end": "10:00"},
+            {"start": "10:30", "end": "15:00"},
+            {"start": "16:30", "end": "22:00"}
+        ],
+
+        "solid_tops": [
+            {"start": "05:00", "end": "10:00"},
+            {"start": "10:30", "end": "15:00"},
+            {"start": "16:30", "end": "22:00"}
+        ],
+
+        "bratt_pans": [
+            {"start": "05:00", "end": "10:00"},
+            {"start": "10:30", "end": "15:00"},
+            {"start": "16:30", "end": "22:00"}
+        ],
+
+        "boiling_kettles": [
+            {"start": "04:30", "end": "10:00"},
+            {"start": "09:00", "end": "15:00"},
+            {"start": "14:30", "end": "22:00"}
+        ],
+
+        "dishwashing": [
+            {"start": "06:00", "end": "10:30"},
+            {"start": "11:30", "end": "15:30"},
+            {"start": "17:30", "end": "23:30"}
+        ],
+
+        "ventilation": [
+            {"start": "04:00", "end": "10:30"},
+            {"start": "09:00", "end": "15:30"},
+            {"start": "14:30", "end": "23:30"}
+        ],
+
+        "unknown": []
+    }
+}
