@@ -1,12 +1,19 @@
-
 {
-    "passengers": 3000,
+    "passengers": {
+        "total": 3000,
+        "flow": [
+            {"name": "colazione", "start": "06:00", "end": "10:00", "count": 3000},
+            {"name": "pranzo",    "start": "11:30", "end": "14:30", "count": 1850},
+            {"name": "cena",      "start": "17:30", "end": "21:30", "count": 3000}
+        ]
+    },
 
     "simulation": {
         "automatic": true,
         "start_time": "03:30",
         "time_scale": 1.0,
-        "cycle_seconds": 1
+        "cycle_seconds": 1,
+        "ramp_minutes": 30
     },
 
     "equipment_profiles": {
@@ -16,63 +23,63 @@
         ],
 
         "ovens": [
-            {"start": "04:00", "end": "10:30"},
-            {"start": "09:00", "end": "15:30"},
-            {"start": "14:30", "end": "23:00"}
+            {"start": "04:30", "end": "10:30"},
+            {"start": "10:00", "end": "15:00"},
+            {"start": "16:00", "end": "22:30"}
         ],
 
         "induction": [
-            {"start": "04:30", "end": "10:00"},
-            {"start": "09:30", "end": "15:00"},
-            {"start": "14:30", "end": "22:30"}
+            {"start": "05:00", "end": "10:00"},
+            {"start": "10:30", "end": "14:30"},
+            {"start": "16:30", "end": "22:00"}
         ],
 
         "fryers": [
-            {"start": "05:00", "end": "10:00"},
-            {"start": "10:30", "end": "15:00"},
-            {"start": "16:30", "end": "22:00"}
+            {"start": "05:15", "end": "10:00"},
+            {"start": "10:45", "end": "14:30"},
+            {"start": "16:45", "end": "22:00"}
         ],
 
         "infrared_grills": [
-            {"start": "05:00", "end": "10:00"},
-            {"start": "11:00", "end": "14:30"},
-            {"start": "17:00", "end": "22:00"}
+            {"start": "05:15", "end": "10:00"},
+            {"start": "10:45", "end": "14:30"},
+            {"start": "16:45", "end": "22:00"}
         ],
 
         "frytops": [
-            {"start": "05:00", "end": "10:00"},
-            {"start": "10:30", "end": "15:00"},
-            {"start": "16:30", "end": "22:00"}
+            {"start": "05:15", "end": "10:00"},
+            {"start": "10:45", "end": "14:30"},
+            {"start": "16:45", "end": "22:00"}
         ],
 
         "solid_tops": [
-            {"start": "05:00", "end": "10:00"},
-            {"start": "10:30", "end": "15:00"},
-            {"start": "16:30", "end": "22:00"}
+            {"start": "05:15", "end": "10:00"},
+            {"start": "10:45", "end": "14:30"},
+            {"start": "16:45", "end": "22:00"}
         ],
 
         "bratt_pans": [
             {"start": "05:00", "end": "10:00"},
-            {"start": "10:30", "end": "15:00"},
+            {"start": "10:30", "end": "14:30"},
             {"start": "16:30", "end": "22:00"}
         ],
 
         "boiling_kettles": [
-            {"start": "04:30", "end": "10:00"},
-            {"start": "09:00", "end": "15:00"},
-            {"start": "14:30", "end": "22:00"}
+            {"start": "04:30", "end": "10:30"},
+            {"start": "10:00", "end": "15:00"},
+            {"start": "16:00", "end": "22:30"}
         ],
 
         "dishwashing": [
-            {"start": "06:00", "end": "10:30"},
-            {"start": "11:30", "end": "15:30"},
-            {"start": "17:30", "end": "23:30"}
+            {"start": "06:30", "end": "11:00"},
+            {"start": "12:00", "end": "15:30"},
+            {"start": "18:00", "end": "23:00"}
         ],
 
         "ventilation": [
-            {"start": "04:00", "end": "10:30"},
-            {"start": "09:00", "end": "15:30"},
-            {"start": "14:30", "end": "23:30"}
+            {"start": "04:30", "end": "10:30"},
+            {"start": "10:00", "end": "15:00"},
+            {"start": "16:00", "end": "22:30"}
         ],
 
         "unknown": []
