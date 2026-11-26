@@ -1,16 +1,17 @@
+import logging
+from collections import deque
+
+logger = logging.getLogger(__name__)
 
 class EquipmentScheduler:
 
-    def __init__(self, equipment_manager, daily_schedule):
-
+    def __init__(self, equipment_manager, daily_schedule, max_log_size=1000):
         self.manager = equipment_manager
         self.schedule = daily_schedule
-
         self.enabled = True
-
         self.equipment_categories = {}
-        self.transition_log = []
-
+        # Usa deque per limitare automaticamente la dimensione (evita memory leak)
+        self.transition_log = deque(maxlen=max_log_size)
         self._classify_equipment()
 
     # =====================================
@@ -75,9 +76,8 @@ class EquipmentScheduler:
         return "unknown"
 
     def _classify_equipment(self):
-
-        print("\n========== EQUIPMENT CLASSIFICATION ==========")
-
+        logger.info("\n========== EQUIPMENT CLASSIFICATION ==========")
+        
         totals = {}
 
         for equipment_id, equipment in self.manager.equipment.items():
@@ -91,14 +91,14 @@ class EquipmentScheduler:
 
             totals[category] = totals.get(category, 0) + 1
 
-            print(f"{equipment_id:25} -> {category}")
+            logger.info(f"{equipment_id:25} -> {category}")
 
-        print("\n========== CATEGORY TOTALS ==========")
+        logger.info("\n========== CATEGORY TOTALS ==========")
 
         for category, count in sorted(totals.items()):
-            print(f"{category:20} : {count}")
+            logger.info(f"{category:20} : {count}")
 
-        print("=====================================\n")
+        logger.info("=====================================\n")
 
     # =====================================
     # STATO APPARECCHIATURA
@@ -130,52 +130,35 @@ class EquipmentScheduler:
     # =====================================
     # AGGIORNAMENTO AUTOMATICO
     # =====================================
-
     def update(self, simulation_seconds):
-
         if not self.enabled:
             return
 
         minute = int(simulation_seconds // 60) % 1440
 
         for equipment_id in self.manager.equipment:
-
-            # Rispetta i comandi manuali
             mode = self.manager.get_mode(equipment_id)
-
             if mode != "AUTO":
                 continue
 
-            desired_state = self.should_be_on(
-                equipment_id,
-                minute
-            )
-
-            current_state = self.is_equipment_on(
-                equipment_id
-            )
+            desired_state = self.should_be_on(equipment_id, minute)
+            current_state = self.is_equipment_on(equipment_id)
 
             if desired_state == current_state:
                 continue
 
-            self.manager.set_auto_state(
-                equipment_id,
-                desired_state
-            )
-
+            self.manager.set_auto_state(equipment_id, desired_state)
             action = "ON" if desired_state else "OFF"
-
+            
             self.transition_log.append({
                 "time": simulation_seconds,
                 "equipment_id": equipment_id,
                 "category": self.equipment_categories[equipment_id],
                 "action": action
             })
+            
+            logger.info(f"[{minute//60:02d}:{minute%60:02d}] {equipment_id} -> {action} AUTO")
 
-            print(
-                f"[{minute // 60:02d}:{minute % 60:02d}] "
-                f"{equipment_id} -> {action} AUTO"
-            )
 
     # =====================================
     # CONTROLLO AUTOMAZIONE

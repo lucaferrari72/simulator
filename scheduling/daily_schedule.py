@@ -1,6 +1,9 @@
-
 import json
+import logging
+import re
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class DailySchedule:
@@ -26,13 +29,18 @@ class DailySchedule:
             return json.load(file)
 
     @staticmethod
-    def time_to_minutes(value):
-
-        hours, minutes = map(int, value.split(":"))
-
+    def time_to_minutes(value: str) -> int:
+        if not isinstance(value, str):
+            raise ValueError(f"Orario deve essere una stringa, ricevuto: {type(value)}")
+        
+        match = re.match(r"^(\d{1,2}):(\d{2})$", value)
+        if not match:
+            raise ValueError(f"Formato orario non valido (richiesto HH:MM): {value}")
+        
+        hours, minutes = int(match.group(1)), int(match.group(2))
         if not (0 <= hours <= 23 and 0 <= minutes <= 59):
-            raise ValueError(f"Orario non valido: {value}")
-
+            raise ValueError(f"Valori orario fuori range (0-23h, 0-59m): {value}")
+            
         return hours * 60 + minutes
 
     def get_start_time(self):

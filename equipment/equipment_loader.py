@@ -1,4 +1,5 @@
 
+import logging
 from equipment.equipment_manager import EquipmentManager
 
 # IMPORT CATALOGHI
@@ -15,6 +16,8 @@ from equipment.refrigerator_catalog import create_all_refrigerators
 from equipment.hood_catalog import create_all_hoods
 
 
+logger = logging.getLogger(__name__)
+
 # REGISTRO DEI CATALOGHI
 CATALOG_FACTORIES = [
     create_all_fryers,
@@ -30,27 +33,19 @@ CATALOG_FACTORIES = [
     create_all_hoods,
 ]
 
-
 def create_equipment_manager():
-
     manager = EquipmentManager()
+    total_equipment = 0
 
     for factory in CATALOG_FACTORIES:
-
         catalog = factory()
-
         manager.add_catalog(catalog)
+        count = len(catalog)
+        total_equipment += count
+        logger.info(f"Catalogo caricato: {factory.__name__} ({count} apparecchiature)")
 
-        print(
-            f"Catalogo caricato: {factory.__name__} "
-            f"({len(catalog)} apparecchiature)"
-        )
-
-    print("-" * 50)
-
-    print(
-        f"Totale apparecchiature: "
-        f"{len(manager.equipment)}"
-    )
-
+    logger.info("-" * 50)
+    logger.info(f"Totale apparecchiature caricate: {total_equipment}")
     return manager
+
+
