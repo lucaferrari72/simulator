@@ -11,6 +11,9 @@ class EquipmentScheduler:
         self.equipment_categories = {}
         self.transition_log = []
 
+        # Usato da SimulationEngine.reset() per ripulire lo stato
+        self.previous_states = {}
+
         self._classify_equipment()
 
     # =====================================
@@ -138,6 +141,17 @@ class EquipmentScheduler:
 
         minute = int(simulation_seconds // 60) % 1440
 
+        self._last_simulation_seconds = simulation_seconds
+
+        # Afflusso non costante dei passeggeri (colazione/pranzo/cena).
+        # Ogni categoria di carichi ha la propria finestra oraria:
+        # l'accensione avviene in anticipo rispetto al servizio
+        # (preparazione), lo spegnimento dopo la fine (pulizia/lavaggio).
+        active_passengers = self.schedule.get_active_passengers(
+            simulation_seconds
+        )
+        service = self.schedule.get_service_at(simulation_seconds)
+
         for equipment_id in self.manager.equipment:
 
             # Rispetta i comandi manuali
@@ -155,6 +169,8 @@ class EquipmentScheduler:
                 equipment_id
             )
 
+            self.previous_states[equipment_id] = desired_state
+
             if desired_state == current_state:
                 continue
 
@@ -169,12 +185,15 @@ class EquipmentScheduler:
                 "time": simulation_seconds,
                 "equipment_id": equipment_id,
                 "category": self.equipment_categories[equipment_id],
-                "action": action
+                "action": action,
+                "service": service,
+                "passengers": active_passengers
             })
 
             print(
                 f"[{minute // 60:02d}:{minute % 60:02d}] "
-                f"{equipment_id} -> {action} AUTO"
+                f"{equipment_id} -> {action} AUTO "
+                f"({service}, Pax={active_passengers})"
             )
 
     # =====================================
@@ -205,5 +224,11 @@ class EquipmentScheduler:
             "equipment_count": len(self.equipment_categories),
             "active_equipment": active,
             "transitions": len(self.transition_log),
-            "categories": self.equipment_categories.copy()
+            "categories": self.equipment_categories.copy(),
+            "service": self.schedule.get_service_at(
+                getattr(self, "_last_simulation_seconds", 0)
+            ),
+            "passengers": self.schedule.get_active_passengers(
+                getattr(self, "_last_simulation_seconds", 0)
+            )
         }
