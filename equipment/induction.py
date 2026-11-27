@@ -1,4 +1,6 @@
 
+import math
+
 from equipment.base import BaseEquipment
 
 
@@ -11,7 +13,6 @@ class InductionCooktop(BaseEquipment):
         nominal_power_kw=3.5,
         voltage_v=220
     ):
-
         super().__init__(
             equipment_id=equipment_id,
             manufacturer="Garland",
@@ -41,7 +42,6 @@ class InductionCooktop(BaseEquipment):
         self.is_heating = False
 
     def set_level(self, level):
-
         if not isinstance(level, int) or isinstance(level, bool):
             raise ValueError("Il livello deve essere un numero intero")
 
@@ -54,27 +54,19 @@ class InductionCooktop(BaseEquipment):
             self.set_power(0.0)
 
     def set_pan_present(self, present):
-
         self.pan_present = bool(present)
 
     def turn_on(self):
-
         super().turn_on()
 
     def turn_off(self):
-
         super().turn_off()
-
         self.power_level = 0
         self.is_heating = False
 
     def get_selected_power(self):
-
         if self.power_level == 0:
             return 0.0
-
-        # Mappatura lineare provvisoria dei 12 livelli.
-        # Da calibrare con i dati reali Garland.
 
         step = (
             self.max_power_kw - self.min_power_kw
@@ -86,15 +78,17 @@ class InductionCooktop(BaseEquipment):
         )
 
     def update(self, dt_seconds):
+        try:
+            dt_seconds = float(dt_seconds)
+        except (TypeError, ValueError):
+            raise ValueError("Intervallo temporale non valido")
 
-        if dt_seconds <= 0:
-            return
+        if not math.isfinite(dt_seconds) or dt_seconds <= 0:
+            raise ValueError("Intervallo temporale non valido")
 
         if not self.is_on or not self.pan_present:
-
             self.is_heating = False
             self.set_power(0.0)
-
             self.update_electrical(dt_seconds)
             return
 
@@ -104,12 +98,10 @@ class InductionCooktop(BaseEquipment):
 
         self.is_heating = self.power_kw > 0
 
-        # POTENZA TERMICA TRASFERITA ALLA PENTOLA
         thermal_power = (
             self.power_kw * self.heating_efficiency
         )
 
-        # DISPERSIONE TERMICA
         thermal_loss = (
             self.thermal_loss_coefficient
             * (
@@ -118,7 +110,6 @@ class InductionCooktop(BaseEquipment):
             )
         )
 
-        # AGGIORNAMENTO TEMPERATURA
         temperature_change = (
             (thermal_power - thermal_loss)
             / self.thermal_mass
@@ -134,7 +125,6 @@ class InductionCooktop(BaseEquipment):
         self.update_electrical(dt_seconds)
 
     def get_thermal_data(self):
-
         return {
             "power_level": self.power_level,
             "pan_present": self.pan_present,
@@ -143,9 +133,7 @@ class InductionCooktop(BaseEquipment):
         }
 
     def get_data(self):
-
         data = self.get_electrical_data()
-
         data.update(self.get_thermal_data())
 
         data["equipment_id"] = self.equipment_id

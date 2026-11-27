@@ -1,4 +1,6 @@
 
+import math
+
 from equipment.base import BaseEquipment
 
 
@@ -25,12 +27,11 @@ class SolidTop(BaseEquipment):
         self.zone_power_kw = 4.0
 
         self.zone_on = [False] * 4
-
         self.zone_temperature = [20.0] * 4
         self.zone_setpoint = [200.0] * 4
         self.zone_heating = [False] * 4
 
-        # PARAMETRI TERMICI PROVVISORI
+        # PARAMETRI TERMICI
         self.ambient_temperature = 20.0
         self.thermal_mass = 55.0
         self.thermal_loss_coefficient = 0.035
@@ -45,21 +46,24 @@ class SolidTop(BaseEquipment):
             raise ValueError("La zona deve essere un intero")
 
         if zone not in range(1, 5):
-            raise ValueError("La zona deve essere compresa tra 1 e 4")
+            raise ValueError(
+                "La zona deve essere compresa tra 1 e 4"
+            )
 
         return zone - 1
 
     def set_zone(self, zone, enabled):
 
         index = self._validate_zone(zone)
-
         self.zone_on[index] = bool(enabled)
 
     def set_zone_temperature(self, zone, temperature):
 
         index = self._validate_zone(zone)
-
         temperature = float(temperature)
+
+        if not math.isfinite(temperature):
+            raise ValueError("Temperatura non valida")
 
         if not 20.0 <= temperature <= 440.0:
             raise ValueError(
@@ -123,35 +127,51 @@ class SolidTop(BaseEquipment):
 
     def update(self, dt_seconds):
 
-        if dt_seconds <= 0:
+        try:
+            dt_seconds = float(dt_seconds)
+        except (TypeError, ValueError):
+            raise ValueError("Intervallo temporale non valido")
+
+        if not math.isfinite(dt_seconds) or dt_seconds <= 0:
             return
+
+        # POTENZA APPLICATA DURANTE IL TICK PRECEDENTE
+        interval_power_kw = self.power_kw
 
         if not self.is_on:
 
             self.zone_heating = [False] * 4
             self.set_power(0.0)
 
-            self.update_electrical(dt_seconds)
-            return
+        else:
 
-        total_power = 0.0
+            total_power = 0.0
 
-        # AGGIORNAMENTO DELLE QUATTRO ZONE
+            # AGGIORNAMENTO DELLE QUATTRO ZONE
 
-        for index in range(4):
+            for index in range(self.zone_count):
 
-            zone_power = self.update_zone(
-                index,
-                dt_seconds
-            )
+                zone_power = self.update_zone(
+                    index,
+                    dt_seconds
+                )
 
-            total_power += zone_power
+                total_power += zone_power
 
-        # POTENZA TOTALE
+            # POTENZA ISTANTANEA DEL NUOVO TICK
 
-        self.set_power(total_power)
+            self.set_power(total_power)
 
-        self.update_electrical(dt_seconds)
+        # ENERGIA: POTENZA DEL TICK APPENA TRASCORSO
+
+        self.energy_kwh += (
+            interval_power_kw * dt_seconds / 3600.0
+        )
+
+        # CORRENTI E ALLARMI
+
+        self._update_currents()
+        self._check_alarms()
 
     def get_thermal_data(self):
 
@@ -166,7 +186,6 @@ class SolidTop(BaseEquipment):
     def get_data(self):
 
         data = self.get_electrical_data()
-
         data.update(self.get_thermal_data())
 
         data["equipment_id"] = self.equipment_id

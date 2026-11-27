@@ -1,4 +1,6 @@
 
+import math
+
 from equipment.base import BaseEquipment
 
 
@@ -22,7 +24,6 @@ class FryTop(BaseEquipment):
 
         # DUE ZONE DI COTTURA
         self.zone_power_kw = 4.5
-
         self.zone_1_on = False
         self.zone_2_on = False
 
@@ -36,9 +37,8 @@ class FryTop(BaseEquipment):
         self.zone_1_heating = False
         self.zone_2_heating = False
 
-        # PARAMETRI TERMICI PROVVISORI
+        # PARAMETRI TERMICI
         self.ambient_temperature = 20.0
-
         self.thermal_mass = 65.0
         self.thermal_loss_coefficient = 0.035
         self.heating_efficiency = 0.90
@@ -61,9 +61,14 @@ class FryTop(BaseEquipment):
 
     def set_zone_temperature(self, zone, temperature):
 
+        temperature = float(temperature)
+
+        if not math.isfinite(temperature):
+            raise ValueError("Temperatura non valida")
+
         temperature = max(
             20.0,
-            min(float(temperature), 300.0)
+            min(temperature, 300.0)
         )
 
         if zone == 1:
@@ -140,8 +145,16 @@ class FryTop(BaseEquipment):
 
     def update(self, dt_seconds):
 
-        if dt_seconds <= 0:
+        try:
+            dt_seconds = float(dt_seconds)
+        except (TypeError, ValueError):
             return
+
+        if not math.isfinite(dt_seconds) or dt_seconds <= 0:
+            return
+
+        # POTENZA APPLICATA DURANTE IL TICK PRECEDENTE
+        interval_power_kw = self.power_kw
 
         if not self.is_on:
 
@@ -150,7 +163,12 @@ class FryTop(BaseEquipment):
 
             self.set_power(0.0)
 
-            self.update_electrical(dt_seconds)
+            self.energy_kwh += (
+                interval_power_kw * dt_seconds / 3600.0
+            )
+
+            self._update_currents()
+            self._check_alarms()
             return
 
         # ZONA 1
@@ -181,14 +199,22 @@ class FryTop(BaseEquipment):
             dt_seconds
         )
 
-        # POTENZA TOTALE
+        # POTENZA ISTANTANEA DELLE DUE ZONE
 
         self.set_power(power_1 + power_2)
 
-        self.update_electrical(dt_seconds)
+        # ENERGIA DEL TICK PRECEDENTE
+
+        self.energy_kwh += (
+            interval_power_kw * dt_seconds / 3600.0
+        )
+
+        # CORRENTI E ALLARMI
+
+        self._update_currents()
+        self._check_alarms()
 
     def get_thermal_data(self):
-
         return {
             "zone_1_on": self.zone_1_on,
             "zone_2_on": self.zone_2_on,
@@ -206,7 +232,6 @@ class FryTop(BaseEquipment):
     def get_data(self):
 
         data = self.get_electrical_data()
-
         data.update(self.get_thermal_data())
 
         data["equipment_id"] = self.equipment_id

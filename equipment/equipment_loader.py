@@ -87,3 +87,6 @@ def create_equipment_manager():
         )
 
     return manager
+
+
+

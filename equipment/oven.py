@@ -1,4 +1,6 @@
 
+import math
+
 from equipment.base import BaseEquipment
 
 
@@ -15,7 +17,6 @@ class CombiOven(BaseEquipment):
         equipment_id="44503",
         model="iCombi Pro 06-1/1 Marine"
     ):
-
         super().__init__(
             equipment_id=equipment_id,
             manufacturer="Rational",
@@ -26,24 +27,19 @@ class CombiOven(BaseEquipment):
             frequency_hz=60
         )
 
-        # MODALITA' OPERATIVA
         self.mode = "hot_air"
 
-        # TEMPERATURE
         self.chamber_temperature = 20.0
         self.chamber_setpoint = 180.0
 
         self.core_temperature = 20.0
         self.core_target_temperature = 75.0
-
         self.ambient_temperature = 20.0
 
-        # STATO OPERATIVO
         self.is_heating = False
         self.door_open = False
         self.cooking_active = False
 
-        # PARAMETRI TERMICI PROVVISORI
         self.chamber_thermal_mass = 35.0
         self.core_thermal_mass = 120.0
 
@@ -52,11 +48,9 @@ class CombiOven(BaseEquipment):
 
         self.heating_efficiency = 0.90
 
-        # CONTATORI
         self.cooking_time_seconds = 0
 
     def set_mode(self, mode):
-
         if mode not in self.MODES:
             raise ValueError(
                 f"Modalità non valida: {mode}"
@@ -65,38 +59,32 @@ class CombiOven(BaseEquipment):
         self.mode = mode
 
     def set_chamber_temperature(self, temperature):
-
         self.chamber_setpoint = max(
             30.0,
             min(float(temperature), 300.0)
         )
 
     def set_core_target(self, temperature):
-
         self.core_target_temperature = max(
             0.0,
             min(float(temperature), 100.0)
         )
 
     def set_door(self, opened):
-
         self.door_open = bool(opened)
 
     def start_cooking(self):
-
         if not self.is_on:
             self.turn_on()
 
         self.cooking_active = True
 
     def stop_cooking(self):
-
         self.cooking_active = False
         self.is_heating = False
         self.set_power(0.0)
 
     def turn_off(self):
-
         super().turn_off()
 
         self.is_heating = False
@@ -104,15 +92,25 @@ class CombiOven(BaseEquipment):
 
     def update(self, dt_seconds):
 
-        if dt_seconds <= 0:
+        dt_seconds = float(dt_seconds)
+
+        if not math.isfinite(dt_seconds) or dt_seconds <= 0:
             return
+
+        # Potenza effettiva durante l'intervallo trascorso
+        interval_power_kw = self.power_kw
 
         if not self.is_on or not self.cooking_active:
 
             self.is_heating = False
             self.set_power(0.0)
 
-            self.update_electrical(dt_seconds)
+            self.energy_kwh += (
+                interval_power_kw * dt_seconds / 3600.0
+            )
+
+            self._update_currents()
+            self._check_alarms()
             return
 
         # CONTROLLO TEMPERATURA CAMERA
@@ -127,13 +125,9 @@ class CombiOven(BaseEquipment):
         )
 
         if self.is_heating:
-
             selected_power = self.MODES[self.mode]
-
             self.set_power(selected_power)
-
         else:
-
             self.set_power(0.0)
 
         # POTENZA TERMICA
@@ -186,14 +180,20 @@ class CombiOven(BaseEquipment):
         )
 
         # TEMPO DI COTTURA
-        if self.cooking_active:
-            self.cooking_time_seconds += dt_seconds
+        self.cooking_time_seconds += dt_seconds
 
         # AGGIORNAMENTO ELETTRICO
-        self.update_electrical(dt_seconds)
+        # L'energia usa la potenza presente
+        # all'inizio dell'intervallo.
+        self.energy_kwh += (
+            interval_power_kw * dt_seconds / 3600.0
+        )
+
+        # Corrente aggiornata sulla nuova potenza
+        self._update_currents()
+        self._check_alarms()
 
     def get_thermal_data(self):
-
         return {
             "mode": self.mode,
             "chamber_temperature": self.chamber_temperature,
@@ -209,7 +209,6 @@ class CombiOven(BaseEquipment):
     def get_data(self):
 
         data = self.get_electrical_data()
-
         data.update(self.get_thermal_data())
 
         data["equipment_id"] = self.equipment_id
