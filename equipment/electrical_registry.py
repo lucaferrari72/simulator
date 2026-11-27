@@ -24,6 +24,21 @@ NETWORK_REFERENCE = {
     "description": "Rete generale nave",
 }
 
+NETWORKS = {
+    "main_440v": {
+        "voltage_v": 440.0,
+        "phases": 3,
+        "frequency_hz": 60,
+        "description": "Rete principale trifase",
+    },
+
+    "auxiliary_220v": {
+        "voltage_v": 220.0,
+        "phases": 1,
+        "frequency_hz": 60,
+        "description": "Rete autonoma monofase",
+    },
+}
 
 EQUIPMENT_LINES = {
     "fryer": "cucina_calda",
