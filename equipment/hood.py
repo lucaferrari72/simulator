@@ -168,29 +168,35 @@ class Hood(BaseEquipment):
     # CALCOLO POTENZA
     # -----------------------------------------
 
+
     def calculate_power(self):
+        """Calcola l'assorbimento della cappa.
 
-        power = 0.0
+        Il catalogo fornisce la potenza nominale complessiva.
+        Non vengono inventate potenze per i singoli componenti.
+        """
 
+        if not self.is_on:
+            return 0.0
+
+        active = (
+            self.fan_on
+            or self.lighting_on
+            or self.uv_sensor_active
+            or self.wash_active
+            or self.water_valve_open
+        )
+
+        # La cappa Water Wash mantiene l'assorbimento
+        # della centralina quando è alimentata.
         if self.hood_type == "WATER_WASH":
+            active = True
 
-            # Centralina ed elettrovalvole
-            if self.is_on:
-                power = 0.10
-
-        elif self.hood_type == "DRY_GREASE":
-
-            # Illuminazione LED
-            if self.lighting_on:
-                power = 0.078
-
-        elif self.hood_type == "TEPPANYAKI":
-
-            # Illuminazione e sensori
-            if self.lighting_on or self.uv_sensor_active:
-                power = 0.10
-
-        return min(power, self.nominal_power_kw)
+        return (
+            self.nominal_power_kw
+            if active
+            else 0.0
+        )
 
     # -----------------------------------------
     # AGGIORNAMENTO
