@@ -237,7 +237,13 @@ def create_electrical_record(equipment, equipment_id=None):
 
     known = all(
         value is not None
-        for value in (power, voltage, phases, frequency)
+        for value in (
+            power,
+            voltage,
+            phases,
+            frequency,
+            power_factor,
+        )
     )
 
     confidence = "CODE_DEFINED" if known else "INCOMPLETE"
